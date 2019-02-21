@@ -1,0 +1,30 @@
+{
+  "name": "wpsmith/script",
+  "description": "WordPress script.",
+  "keywords": [
+    "wordpress",
+    "script"
+  ],
+  "homepage": "https://github.com/wpsmith/Script",
+  "license": "GPL-2.0+",
+  "authors": [
+    {
+      "name": "Travis Smith",
+      "email": "t@wpsmith.net",
+      "homepage": "https://wpsmith.net/",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/wpsmith/Script/issues"
+  },
+  "require": {
+    "php": ">=5.6.0",
+    "wpsmith/singleton": "^1.0.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "WPS\\WP\\Scripts\\": "src/"
+    }
+  }
+}
