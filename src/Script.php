@@ -120,8 +120,6 @@ if ( ! class_exists( __NAMESPACE__ . '\Script' ) ) {
 				throw new \Exception( 'Missing a required property: handle, src, or file.' );
 			}
 
-			add_action( 'plugins_loaded', array( $this, 'plugins_loaded' ) );
-
 			$args = wp_parse_args( $args, $this->get_defaults() );
 
 			$this->handle   = $args['handle'];
@@ -132,29 +130,66 @@ if ( ! class_exists( __NAMESPACE__ . '\Script' ) ) {
 			$this->inline   = isset( $args['inline'] ) ? $args['inline'] : $this->inline;
 			$this->priority = isset( $args['priority'] ) ? $args['priority'] : $this->priority;
 
+			if ( ! did_action( 'plugins_loaded' ) ) {
+				add_action( 'plugins_loaded', array( $this, 'plugins_loaded' ) );
+			} else {
+				$this->plugins_loaded();
+			}
+
+		}
+
+		/**
+		 * Gets the directory path with a trailing slash.
+		 *
+		 * @param string $dir Directory path.
+		 *
+		 * @return string
+		 */
+		public static function get_dir_path( $dir = __DIR__ ) {
+			return trailingslashit( $dir );
+		}
+
+		/**
+		 * Gets the URL for the directory.
+		 *
+		 * @param string $dir Directory.
+		 * @param string $path Path to append to the end.
+		 *
+		 * @return string
+		 */
+		public static function get_dir_url( $dir = __DIR__, $path = '' ) {
+			return get_site_url(
+				null,
+				trailingslashit( str_replace( ABSPATH, '', $dir ) ) . ltrim( $path, " \t\n\r\0\x0B/" )
+			);
 		}
 
 		/**
 		 * Conditionally gets the suffix (.min) for file.
 		 *
+		 * @param string $type The type of suffix to retrieve.
+		 *
 		 * @return string
 		 */
-		public static function get_suffix() {
-			return ( ( defined( 'STYLE_DEBUG' ) && STYLE_DEBUG ) || ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ) ? '' : '.min';
+		public static function get_suffix( $type = '' ) {
+			return wp_scripts_get_suffix( $type );
 		}
 
 		/**
 		 * Gets the script args defaults.
 		 *
 		 * @param string $rel_path Relative path to file.
+		 * @param string $file File.
 		 *
 		 * @return array
 		 */
-		protected function get_defaults( $rel_path = '' ) {
+		protected function get_defaults( $rel_path = '', $file = '' ) {
+			$file = $file ? $file : $this->file;
+
 			return array(
 				'handle'   => $this->handle,
 				'src'      => plugins_url( $rel_path ),
-				'file'     => plugin_dir_path( $this->file ) . ltrim( $rel_path, '/' ),
+				'file'     => plugin_dir_path( $file ) . ltrim( $rel_path, '/' ),
 				'deps'     => array(),
 				'inline'   => '',
 				'priority' => 25,
@@ -165,8 +200,17 @@ if ( ! class_exists( __NAMESPACE__ . '\Script' ) ) {
 		 * Add the hooks on plugins_loaded hook.
 		 */
 		public function plugins_loaded() {
-			add_action( 'init', array( $this, 'register' ) );
-			add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_script' ), $this->priority );
+			if ( ! did_action( 'init' ) ) {
+				add_action( 'init', array( $this, 'register' ) );
+			} else {
+				$this->register();
+			}
+
+			if ( ! did_action( 'wp_enqueue_scripts' ) ) {
+				add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_script' ), $this->priority );
+			} else {
+				$this->maybe_enqueue_script();
+			}
 		}
 
 		/**
@@ -251,5 +295,7 @@ if ( ! class_exists( __NAMESPACE__ . '\Script' ) ) {
 				wp_localize_script( $this->handle, $this->localize['name'], $this->localize['object'] );
 			}
 		}
+
+
 	}
 }
